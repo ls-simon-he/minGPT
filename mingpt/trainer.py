@@ -5,6 +5,7 @@ so nothing in this file really has anything to do with GPT specifically.
 
 import math
 import logging
+import copy
 
 from tqdm import tqdm
 import numpy as np
@@ -49,6 +50,18 @@ class Trainer:
         if torch.cuda.is_available():
             self.device = torch.cuda.current_device()
             self.model = torch.nn.DataParallel(self.model).to(self.device)
+
+    def load_checkpoint(self, ckpt_path):
+        ckpt_model = self.model.module if hasattr(self.model, "module") else self.model
+        logger.info("loading %s", ckpt_path)
+        print('Loading checkpoint...')
+        ck = torch.load(ckpt_path, self.device)
+        ckpt_model.load_state_dict(copy.deepcopy(ck))
+        print('Checkpoint loaded!')
+        # Print model's state_dict
+        print("Model's state_dict:")
+        for param_tensor in ckpt_model.state_dict():
+            print(param_tensor, "\t", ckpt_model.state_dict()[param_tensor].size())  
 
     def save_checkpoint(self):
         # DataParallel wrappers keep raw model object in .module attribute
